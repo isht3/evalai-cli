@@ -19,6 +19,7 @@ def get_challenges(url):
     headers = get_headers()
     response = requests.get(url, headers=headers)
     response_json = json.loads(response.text)
+
     if valid_token(response_json):
 
         column_names = ['ID', 'Challenge Name', 'Short Description']

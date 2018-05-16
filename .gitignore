@@ -100,3 +100,6 @@ evalai/utils/.config
 
 # mypy
 .mypy_cache/
+
+# pytest
+.pytest_cache/
