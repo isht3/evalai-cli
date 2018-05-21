@@ -14,6 +14,9 @@ from evalai.utils.urls import urls
 API_HOST_URL = os.environ.get("EVALAI_API_URL", 'http://localhost:8000')
 
 
+# Check if 200, else print the error message.
+# {"error":"ChallengePhase does not exist"}  
+
 def get_challenge_table(challenges):
     column_names = ['ID', 'Challenge Name', 'Short Description']
     attributes = ['id', 'title', 'short_description']
@@ -117,3 +120,29 @@ def get_challenge_count(mode):
 
     challenges_table = get_challenge_table(challenges)
     echo(challenges_table)
+
+
+def get_phase_list(challenge_id):
+    """
+    Gets the phase lists of a particular challenge.
+    """
+    url = urls['get_phase_list']
+    url = "{}{}".format(API_HOST_URL, url)    
+    url = url.format(challenge_id)
+    headers = get_headers()
+    response = requests.get(url, headers=headers)
+    echo(response.text)
+    echo(response.status_code == 200)
+
+
+def get_phase_details(challenge_id, phase_id):
+    """
+    Gets the phase details of a particular challenge phase.
+    """
+    url = urls['get_phase_details']
+    url = "{}{}".format(API_HOST_URL, url)    
+    url = url.format(challenge_id, phase_id)
+    headers = get_headers()
+    response = requests.get(url, headers=headers)
+    echo(response.text)
+    echo(response.status_code == 200)
