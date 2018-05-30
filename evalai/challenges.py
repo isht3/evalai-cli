@@ -11,108 +11,78 @@ from evalai.utils.challenges import (
                                     get_phase_details,)
 
 
+class Challenge(object):
+    def __init__(self, challenge=None):
+        self.CHALLENGE = challenge
+
+
 @click.group(invoke_without_command=True)
-@click.pass_context
-def challenges(ctx):
-    """
-    Challenges and related options.
-    """
-    if ctx.invoked_subcommand is None:
-        welcome_text = ("Welcome to the EvalAI CLI. Use evalai"
-                        "challenges --help for viewing all the options.")
-        echo(welcome_text)
-
-
-@click.group(invoke_without_command=True, name='list')
 @click.pass_context
 @click.option('--participant', is_flag=True,
               help="Show the challenges that you've participated")
 @click.option('--host', is_flag=True,
               help="Show the challenges that you've hosted")
-def list_challenges(ctx, participant, host):
+def challenges(ctx, participant, host):
     """
     Used to list challenges.
-    Invoked by running `evalai challenges list`
+    Invoked by running `evalai challenges`
     """
-    if participant:
-        get_challenge_count(host, participant)
-    elif host:
+    if participant or host:
         get_challenge_count(host, participant)
     elif ctx.invoked_subcommand is None:
         get_challenge_list()
 
 
-@click.command(name='ongoing')
-def list_ongoing_challenges():
+@click.group()
+@click.pass_context
+@click.argument('CHALLENGE', type=int)
+def challenge(ctx, challenge):
+    ctx.obj = Challenge(challenge)
+
+
+@challenges.command()
+def ongoing():
     """
     Used to list all the challenges which are active.
-    Invoked by running `evalai challenges list ongoing`
+    Invoked by running `evalai challenges ongoing`
     """
     get_ongoing_challenge_list()
 
 
-@click.command(name='past')
-def list_past_challenges():
+@challenges.command()
+def past():
     """
     Used to list all the past challenges.
-    Invoked by running `evalai challenges list past`
+    Invoked by running `evalai challenges past`
     """
     get_past_challenge_list()
 
 
-@click.command(name='future')
-def list_future_challenges():
+@challenges.command()
+def future():
     """
     Used to list all the challenges which are coming up.
-    Invoked by running `evalai challenges list future`
+    Invoked by running `evalai challenges future`
     """
     get_future_challenge_list()
 
 
-@click.group(invoke_without_command=True)
-@click.pass_context
-@click.option('-c', '--challenge-id', type=int,
-              help="Challenge ID for viewing its phases.")
-@click.option('-p', '--phase-id', type=int,
-              help="Phase ID for showing the phase details")
-def phases(ctx, challenge_id, phase_id):
+@challenge.command()
+@click.pass_obj
+def phases(ctx):
     """
     Displays phase and phase related details.
-    Invoked by running `evalai challenges phases`
+    Invoked by running `evalai challenge CHALLENGE phases`
     """
-    if ctx.invoked_subcommand != "list":
-        if challenge_id is None or phase_id is None:
-            echo("Please pass in both parameters.")
-        else:
-            get_phase_details(challenge_id, phase_id)
+    get_phase_list(ctx.CHALLENGE)
 
 
-@click.command(name='list')
-@click.option('-c', '--challenge-id', type=int,
-              help="Challenge ID for viewing its phases.")
-def list_phases(challenge_id):
+@challenge.command()
+@click.pass_obj
+@click.argument('PHASE', type=int)
+def phase(ctx, phase):
     """
     Displays phases as a list.
-    Invoked by running `evalai challenges phases list`
+    Invoked by running `evalai challenge CHALLENGE phase PHASE`
     """
-
-    if challenge_id is None:
-        echo("Please pass in parameters.")
-    else:
-        challenge_id = int(challenge_id)
-        get_phase_list(challenge_id)
-
-
-# Command -> evalai challenges list
-challenges.add_command(list_challenges)
-
-# Command -> evalai challenges list ongoing/past/future
-list_challenges.add_command(list_ongoing_challenges)
-list_challenges.add_command(list_past_challenges)
-list_challenges.add_command(list_future_challenges)
-
-# Command -> evalai challenges phases
-challenges.add_command(phases)
-
-# Command -> evalai challenges phases list
-phases.add_command(list_phases)
+    get_phase_details(ctx.CHALLENGE, phase)
