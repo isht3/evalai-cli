@@ -30,27 +30,24 @@ def submit_file(file):
     print(response.text)
 
 
-def print_submission_details(submissions, submission_id):
+def print_submission_details(submission):
     """
     Pretty prints details of submission
     """
-    for submission in submissions:
-        if submission["id"] == submission_id:
-            team_title = "\n{}".format(style(submission['participant_team_name'], bold=True, fg="green"))
-            sid = "Submission ID: {}\n".format(style(str(submission['id']), bold=True, fg="blue"))
+    team_title = "\n{}".format(style(submission['participant_team_name'], bold=True, fg="green"))
+    sid = "Submission ID: {}\n".format(style(str(submission['id']), bold=True, fg="blue"))
 
-            title = "{} {}".format(team_title, sid)
+    title = "{} {}".format(team_title, sid)
 
-            status = style("\nSubmission Status : {}\n".format(
-                                        submission['status']), bold=True)
-            execution_time = style("\nSubmission Status : {}\n".format(
-                                        submission['execution_time']), bold=True)
-            submitted_at = style("\nSubmission Status : {}\n".format(
-                                        submission['submitted_at'].split('T')[0]), bold=True)
+    status = style("\nSubmission Status : {}\n".format(
+                                submission['status']), bold=True)
+    execution_time = style("\nSubmission Status : {}\n".format(
+                                submission['execution_time']), bold=True)
+    submitted_at = style("\nSubmission Status : {}\n".format(
+                                submission['submitted_at'].split('T')[0]), bold=True)
 
-            phase = "{}{}{}{}".format(title, status, execution_time, submitted_at)
-            echo(phase)
-
+    phase = "{}{}{}{}".format(title, status, execution_time, submitted_at)
+    echo(phase)
 
 
 def get_submission_details(submission_id, challenge_id=4, phase_id=7):
@@ -75,5 +72,4 @@ def get_submission_details(submission_id, challenge_id=4, phase_id=7):
     response_json = response.json()
 
     if valid_token(response_json):
-        submissions = response_json["results"]
-        print_submission_details(submissions, submission_id)
+        print_submission_details(response_json)
