@@ -7,6 +7,13 @@ from evalai.utils.challenges import (
                                     get_past_challenge_list,
                                     get_future_challenge_list,
                                     get_challenge_count,)
+from evalai.utils.submissions import get_submission_stats
+
+
+class Challenge(object):
+    def __init__(self, challenge=None, phase=None):
+        self.CHALLENGE = challenge
+        self.PHASE = phase
 
 
 @click.group(invoke_without_command=True)
@@ -19,6 +26,16 @@ def challenges(ctx):
         welcome_text = ("Welcome to the EvalAI CLI. Use evalai"
                         "challenges --help for viewing all the options.")
         echo(welcome_text)
+
+
+@click.group()
+@click.pass_context
+@click.argument('CHALLENGE', type=int)
+def challenge(ctx, challenge):
+    """
+    Displays challenge specific details.
+    """
+    ctx.obj = Challenge(challenge)
 
 
 @click.group(invoke_without_command=True, name='list')
@@ -65,6 +82,30 @@ def list_future_challenges():
     Invoked by running `evalai challenges list future`
     """
     get_future_challenge_list()
+
+
+@click.group(invoke_without_command=True)
+@click.pass_obj
+@click.argument('PHASE', type=int)
+def phase(ctx, phase):
+    """
+    Displays details a particular phase.
+    Invoked by running `evalai challenge CHALLENGE phase PHASE`
+    """
+    ctx.PHASE = phase
+
+
+@phase.command(name='submission-stats')
+@click.pass_obj
+def submission_stats(ctx):
+    """
+    Your submissions stats to a particular Challenge.
+    Invoked by running `evalai challenge CHALLENGE phase PHASE submission-stats`.
+    """
+    get_submission_stats(ctx.CHALLENGE, ctx.PHASE)
+
+
+challenge.add_command(phase)
 
 
 # Command -> evalai challenges list
