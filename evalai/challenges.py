@@ -15,7 +15,7 @@ class Challenge(object):
         self.challenge_id = challenge_id
 
 
-@click.group(invoke_without_command=True, name='list')
+@click.group(invoke_without_command=True)
 @click.pass_context
 @click.option('--participant', is_flag=True,
               help="List the challenges that you've participated")
