@@ -9,16 +9,27 @@ from evalai.utils.challenges import (
                                     display_challenge_phase_list,
                                     display_challenge_phase_detail,)
 from evalai.utils.teams import participate_in_a_challenge
-from evalai.utils.submissions import submit_a_file
+from evalai.utils.submissions import make_submission
 
 
 class Challenge(object):
     """
     Stores user input ID's.
     """
-    def __init__(self, challenge=None, phase=None):
+    def __init__(self, challenge=None, phase=None, subcommand=None):
         self.challenge_id = challenge
         self.phase_id = phase
+        self.subcommand = subcommand
+
+
+class PhaseGroup(click.Group):
+    """
+    Fetch the submcommand data in the phase group.
+    """
+    def invoke(self, ctx):
+        subcommand = tuple(ctx.protected_args)
+        ctx.obj.subcommand = subcommand
+        super(PhaseGroup, self).invoke(ctx)
 
 
 @click.group(invoke_without_command=True)
@@ -47,7 +58,7 @@ def challenge(ctx, challenge):
     """
     View challenge specific details.
     """
-    ctx.obj = Challenge(challenge_id=challenge)
+    ctx.obj = Challenge(challenge=challenge)
 
 
 @challenges.command()
@@ -95,7 +106,7 @@ def phases(ctx):
     display_challenge_phase_list(ctx.challenge_id)
 
 
-@challenge.command()
+@click.group(invoke_without_command=True, cls=PhaseGroup)
 @click.pass_obj
 @click.argument('PHASE', type=int)
 def phase(ctx, phase):
@@ -105,7 +116,9 @@ def phase(ctx, phase):
     """
     Invoked by running `evalai challenges CHALLENGE phase PHASE`
     """
-    display_challenge_phase_detail(ctx.challenge_id, phase)
+    ctx.phase_id = phase
+    if len(ctx.subcommand) == 0:
+        display_challenge_phase_detail(ctx.challenge_id, phase)
 
 
 @challenge.command()
@@ -121,19 +134,6 @@ def participate(ctx, team):
     participate_in_a_challenge(ctx.challenge_id, team)
 
 
-@click.group(invoke_without_command=True)
-@click.pass_obj
-@click.argument('PHASE', type=int)
-def phase(ctx, phase):
-    """
-    Displays phases as a list.
-    """
-    """
-    Invoked by running `evalai challenge CHALLENGE phase PHASE`
-    """
-    ctx.phase_id = phase
-
-
 @phase.command()
 @click.pass_obj
 @click.argument('FILE', type=click.File('rb'))
@@ -144,7 +144,7 @@ def submit(ctx, file):
     """
     Invoked by running `evalai challenge CHALLENGE phase PHASE submit FILE`
     """
-    submit_a_file(ctx.challenge_id, ctx.phase_id, file)
+    make_submission(ctx.challenge_id, ctx.phase_id, file)
 
 
 challenge.add_command(phase)
