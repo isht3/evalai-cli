@@ -178,6 +178,70 @@ def display_participated_or_hosted_challenges(is_host=False, is_participant=Fals
             echo("Sorry, no challenges found!")
 
 
+def pretty_print_challenge_details(challenge):
+    """
+    Function to pretty print the challenge details.
+    """
+    challenge_title = style(challenge["title"], bold=True, fg="green")
+    challenge_id = "ID: {}".format(style(str(challenge["id"]), bold=True))
+
+    challenge_title = "\n{} {}\n".format(challenge_title, challenge_id)
+    print(challenge_title)
+
+    start_date = style(challenge["start_date"], bold=True)
+    start_date = "Start Date: {}\n".format(start_date)
+    print(start_date)
+
+    end_date = style(challenge["end_date"], bold=True)
+    end_date = "End Date: {}\n".format(end_date)
+    print(end_date)
+
+    team = style(challenge["creator"]["team_name"], bold=True)
+    team = "Organised By: {}\n".format(team)
+    print(team)
+
+    description = style(challenge["description"])
+    description = "{}\n{}\n".format(style("Description", bold=True, fg="yellow"), description)
+    print(description)
+
+    submission_guidelines = style(challenge["submission_guidelines"])
+    submission_guidelines = "{}\n{}\n".format(style("Submission Guidelines", bold=True, fg="yellow"), submission_guidelines)
+    print(submission_guidelines)
+
+    evaluation_details = style(challenge["evaluation_details"])
+    evaluation_details = "{}\n{}\n".format(style("Evaluation Details", bold=True, fg="yellow"), evaluation_details)
+    print(evaluation_details)
+
+    terms_and_conditions = style(challenge["terms_and_conditions"])
+    terms_and_conditions = "{}\n{}\n".format(style("Terms and Conditions", bold=True, fg="yellow"), terms_and_conditions)
+    print(terms_and_conditions)
+
+
+def display_challenge_details(challenge):
+    """
+    Function to display challenge details.
+    """
+    url = URLS.challenge_details.value
+    url = "{}{}".format(API_HOST_URL, url)
+    url = url.format(challenge)
+
+    header = get_request_header()
+    try:
+        response = requests.get(url, headers=header)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        if (response.status_code == 401):
+            validate_token(response.json())
+        echo(err)
+        sys.exit(1)
+    except requests.exceptions.RequestException as err:
+        echo(err)
+        sys.exit(1)
+
+    response = response.json()
+    pretty_print_challenge_details(response)
+
+
 def pretty_print_all_challenge_phases(phases):
     """
     Function to print all the challenge phases of a challenge

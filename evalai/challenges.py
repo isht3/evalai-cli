@@ -6,6 +6,7 @@ from evalai.utils.challenges import (
                                     display_ongoing_challenge_list,
                                     display_past_challenge_list,
                                     display_participated_or_hosted_challenges,
+                                    display_challenge_details,
                                     display_challenge_phase_list,
                                     display_challenge_phase_detail,)
 from evalai.utils.teams import participate_in_a_challenge
@@ -19,7 +20,7 @@ class Challenge(object):
         self.challenge_id = challenge
         self.phase_id = phase
 
-
+0
 @click.group(invoke_without_command=True)
 @click.pass_context
 @click.option('--participant', is_flag=True,
@@ -48,7 +49,7 @@ def challenge(ctx, challenge):
     """
     ctx.obj = Challenge(challenge=challenge)
     if ctx.invoked_subcommand is None:
-        print("SUPPP")
+        display_challenge_details(challenge)
 
 
 @challenges.command()
