@@ -2,34 +2,34 @@ import requests
 import sys
 
 from bs4 import BeautifulSoup
+from beautifultable import BeautifulTable
 from click import echo, style
 
 from evalai.utils.auth import get_request_header
-from evalai.utils.common import validate_token
+from evalai.utils.common import validate_token, convert_UTC_date_to_local
 from evalai.utils.urls import URLS
 from evalai.utils.config import API_HOST_URL, EVALAI_ERROR_CODES
 
 
-def pretty_print_challenge_data(challenge):
+requests.packages.urllib3.disable_warnings()
+
+
+def pretty_print_challenge_data(challenges):
     """
     Function to print the challenge data
     """
-    br = style("----------------------------------------"
-               "--------------------------", bold=True)
-
-    challenge_title = "\n{}".format(style(challenge["title"],
-                                    bold=True, fg="green"))
-    challenge_id = "ID: {}\n\n".format(style(str(challenge["id"]),
-                                       bold=True, fg="blue"))
-
-    title = "{} {}".format(challenge_title, challenge_id)
-
-    cleaned_desc = BeautifulSoup(challenge["short_description"], "lxml").text
-    description = "{}\n".format(cleaned_desc)
-    end_date = "End Date : {}".format(style(challenge["end_date"].split("T")[0], fg="red"))
-    end_date = "\n{}\n\n".format(style(end_date, bold=True))
-    challenge = "{}{}{}{}".format(title, description, end_date, br)
-    echo(challenge)
+    table = BeautifulTable(max_width=210)
+    attributes = ["id", "title", "short_description"]
+    columns_attributes = ["ID", "Title", "Short Description", "Creator", "Start Date", "End Date"]
+    table.column_headers = columns_attributes
+    for challenge in reversed(challenges):
+        values = list(map(lambda item: challenge[item], attributes))
+        creator = challenge["creator"]["team_name"]
+        start_date = convert_UTC_date_to_local(challenge["start_date"])
+        end_date = convert_UTC_date_to_local(challenge["end_date"])
+        values.extend([creator, start_date, end_date])
+        table.append_row(values)
+    print(table)
 
 
 def display_challenges(url):
@@ -39,7 +39,7 @@ def display_challenges(url):
 
     header = get_request_header()
     try:
-        response = requests.get(url, headers=header)
+        response = requests.get(url, headers=header, verify=False)
         response.raise_for_status()
     except requests.exceptions.HTTPError as err:
         if (response.status_code == 401):
@@ -54,8 +54,7 @@ def display_challenges(url):
 
     challenges = response["results"]
     if len(challenges) is not 0:
-        for challenge in challenges:
-            pretty_print_challenge_data(challenge)
+        pretty_print_challenge_data(challenges)
     else:
         echo("Sorry, no challenges found!")
 
@@ -156,8 +155,7 @@ def display_participated_or_hosted_challenges(is_host=False, is_participant=Fals
         echo(style("\nHosted Challenges\n", bold=True))
 
         if len(challenges) != 0:
-            for challenge in challenges:
-                pretty_print_challenge_data(challenge)
+            pretty_print_challenge_data(challenges)
         else:
             echo("Sorry, no challenges found!")
 
@@ -172,8 +170,7 @@ def display_participated_or_hosted_challenges(is_host=False, is_participant=Fals
         echo(style("\nParticipated Challenges\n", bold=True))
 
         if len(challenges) != 0:
-            for challenge in challenges:
-                pretty_print_challenge_data(challenge)
+            pretty_print_challenge_data(challenges)
         else:
             echo("Sorry, no challenges found!")
 
