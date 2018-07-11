@@ -10,7 +10,7 @@ long_description = \
 
 setup(
     name=PROJECT,
-    version='1.6a1',
+    version='1.0.5',
 
     description='Use EvalAI through the CLI!',
     long_description=long_description,
@@ -39,6 +39,7 @@ setup(
         'python-dateutil==2.7.3',
         'requests==2.18.4',
         'responses==0.9.0',
+        'validators==0.12.2',
     ],
 
     namespace_packages=[],

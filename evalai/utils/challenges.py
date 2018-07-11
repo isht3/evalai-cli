@@ -17,26 +17,22 @@ from evalai.utils.config import EVALAI_ERROR_CODES
 from evalai.utils.urls import URLS
 
 
-def pretty_print_challenge_data(challenge):
+def pretty_print_challenge_data(challenges):
     """
     Function to print the challenge data
     """
-    br = style("----------------------------------------"
-               "--------------------------", bold=True)
-
-    challenge_title = "\n{}".format(style(challenge["title"],
-                                    bold=True, fg="green"))
-    challenge_id = "ID: {}\n\n".format(style(str(challenge["id"]),
-                                       bold=True, fg="blue"))
-
-    title = "{} {}".format(challenge_title, challenge_id)
-
-    cleaned_desc = BeautifulSoup(challenge["short_description"], "lxml").text
-    description = "{}\n".format(cleaned_desc)
-    end_date = "End Date : {}".format(style(challenge["end_date"].split("T")[0], fg="red"))
-    end_date = "\n{}\n\n".format(style(end_date, bold=True))
-    challenge = "{}{}{}{}".format(title, description, end_date, br)
-    echo(challenge)
+    table = BeautifulTable(max_width=200)
+    attributes = ["id", "title", "short_description"]
+    columns_attributes = ["ID", "Title", "Short Description", "Creator", "Start Date", "End Date"]
+    table.column_headers = columns_attributes
+    for challenge in reversed(challenges):
+        values = list(map(lambda item: challenge[item], attributes))
+        creator = challenge["creator"]["team_name"]
+        start_date = convert_UTC_date_to_local(challenge["start_date"])
+        end_date = convert_UTC_date_to_local(challenge["end_date"])
+        values.extend([creator, start_date, end_date])
+        table.append_row(values)
+    echo(table)
 
 
 def display_challenges(url):
@@ -45,7 +41,7 @@ def display_challenges(url):
     """
     header = get_request_header()
     try:
-        response = requests.get(url, headers=header)
+        response = requests.get(url, headers=header, verify=False)
         response.raise_for_status()
     except requests.exceptions.HTTPError as err:
         if (response.status_code == 401):
@@ -53,15 +49,15 @@ def display_challenges(url):
         echo(err)
         sys.exit(1)
     except requests.exceptions.RequestException as err:
-        echo(err)
+        echo(style("\nCould not establish a connection to EvalAI backend."
+                   " Please check the configured Host URL.\n", bold=True, bg="red"))
         sys.exit(1)
 
     response = response.json()
 
     challenges = response["results"]
     if len(challenges) is not 0:
-        for challenge in challenges:
-            pretty_print_challenge_data(challenge)
+        pretty_print_challenge_data(challenges)
     else:
         echo("Sorry, no challenges found!")
 
@@ -87,7 +83,34 @@ def display_ongoing_challenge_list():
     Displays the list of ongoing challenges from the backend
     """
     url = "{}{}".format(get_host_url(), URLS.challenge_list.value)
-    display_challenges(url)
+
+    header = get_request_header()
+    try:
+        response = requests.get(url, headers=header, verify=False)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        if (response.status_code == 401):
+            validate_token(response.json())
+        echo(err)
+        sys.exit(1)
+    except requests.exceptions.RequestException as err:
+        echo(err)
+        sys.exit(1)
+
+    response = response.json()
+    challenges = response["results"]
+
+    # Filter out past/unapproved/unpublished challenges.
+    challenges = list(filter(lambda challenge:
+                             validate_date_format(challenge['end_date']) > datetime.now() and
+                             challenge["approved_by_admin"] and
+                             challenge["published"],
+                             challenges))
+
+    if len(challenges) != 0:
+        pretty_print_challenge_data(challenges)
+    else:
+        echo("Sorry, no challenges found!")
 
 
 def display_future_challenge_list():
@@ -105,7 +128,7 @@ def get_participant_or_host_teams(url):
     header = get_request_header()
 
     try:
-        response = requests.get(url, headers=header)
+        response = requests.get(url, headers=header, verify=False)
         response.raise_for_status()
     except requests.exceptions.HTTPError as err:
         if (response.status_code == 401):
@@ -129,7 +152,7 @@ def get_participant_or_host_team_challenges(url, teams):
     for team in teams:
         header = get_request_header()
         try:
-            response = requests.get(url.format(team['id']), headers=header)
+            response = requests.get(url.format(team['id']), headers=header, verify=False)
             response.raise_for_status()
         except requests.exceptions.HTTPError as err:
             if (response.status_code == 401):
@@ -162,8 +185,7 @@ def display_participated_or_hosted_challenges(is_host=False, is_participant=Fals
         echo(style("\nHosted Challenges\n", bold=True))
 
         if len(challenges) != 0:
-            for challenge in challenges:
-                pretty_print_challenge_data(challenge)
+            pretty_print_challenge_data(challenges)
         else:
             echo("Sorry, no challenges found!")
 
@@ -186,12 +208,70 @@ def display_participated_or_hosted_challenges(is_host=False, is_participant=Fals
                                      challenges))
             if challenges:
                 echo(style("\nParticipated Challenges\n", bold=True))
-                for challenge in challenges:
-                    pretty_print_challenge_data(challenge)
+                pretty_print_challenge_data(challenges)
             else:
                 echo("Sorry, no challenges found!")
         else:
             echo("Sorry, no challenges found!")
+
+
+def pretty_print_challenge_details(challenge):
+        challenge_title = style(challenge["title"], bold=True, fg="yellow")
+        challenge_id = "ID: {}".format(style(str(challenge["id"]), bold=True))
+
+        challenge_title = "\n{} {}\n\n".format(challenge_title, challenge_id)
+
+        date = convert_UTC_date_to_local(challenge["start_date"])
+        start_date = "Start Date: {}\n\n".format(date)
+
+        date = convert_UTC_date_to_local(challenge["end_date"])
+        end_date = "End Date: {}\n\n".format(date)
+
+        team = challenge["creator"]["team_name"]
+        team = "Organized By: {}\n\n".format(team)
+
+        description = challenge["description"]
+        description = "{}\n{}\n\n".format(style("Description", bg="blue", bold=True), clean_data(description))
+
+        submission_guidelines = challenge["submission_guidelines"]
+        submission_guidelines = "{}\n{}\n\n".format(style("Submission Guidelines", bg="blue", bold=True), clean_data(submission_guidelines))
+
+        evaluation_details = challenge["evaluation_details"]
+        evaluation_details = "{}\n{}\n\n".format(style("Evaluation Details", bg="blue", bold=True), clean_data(evaluation_details))
+
+        terms_and_conditions = challenge["terms_and_conditions"]
+        terms_and_conditions = "{}\n{}\n".format(style("Terms and Conditions", bg="blue", bold=True), clean_data(terms_and_conditions))
+
+        challenge_details = "{}{}{}{}{}{}{}{}".format(challenge_title, start_date, end_date, team, description,
+                                                        submission_guidelines, evaluation_details, terms_and_conditions)
+        echo(challenge_details)
+
+
+def display_challenge_details(challenge):
+    """
+    Function to display challenge details.
+    """
+    url = URLS.challenge_details.value
+    url = "{}{}".format(get_host_url(), url)
+    url = url.format(challenge)
+
+    header = get_request_header()
+    try:
+        response = requests.get(url, headers=header, verify=False)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        if (response.status_code in EVALAI_ERROR_CODES):
+            validate_token(response.json())
+            echo(style("Error: {}".format(response.json()["error"]), fg="red", bold=True))
+        else:
+            echo(err)
+        sys.exit(1)
+    except requests.exceptions.RequestException as err:
+        echo(err)
+        sys.exit(1)
+
+    response = response.json()
+    pretty_print_challenge_details(response)
 
 
 def pretty_print_all_challenge_phases(phases):
@@ -219,7 +299,7 @@ def display_challenge_phase_list(challenge_id):
     url = url.format(challenge_id)
     headers = get_request_header()
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, verify=False)
         response.raise_for_status()
     except requests.exceptions.HTTPError as err:
         if (response.status_code in EVALAI_ERROR_CODES):
@@ -285,7 +365,7 @@ def display_challenge_phase_detail(challenge_id, phase_id, is_json):
     headers = get_request_header()
 
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, verify=False)
         response.raise_for_status()
     except requests.exceptions.HTTPError as err:
         if (response.status_code in EVALAI_ERROR_CODES):
@@ -333,7 +413,7 @@ def display_challenge_phase_split_list(challenge_id):
     url = url.format(challenge_id)
     headers = get_request_header()
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, verify=False)
         response.raise_for_status()
     except requests.exceptions.HTTPError as err:
         if (response.status_code in EVALAI_ERROR_CODES):
@@ -379,7 +459,7 @@ def display_leaderboard(challenge_id, phase_split_id):
     url = url.format(phase_split_id)
     headers = get_request_header()
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, verify=False)
         response.raise_for_status()
     except requests.exceptions.HTTPError as err:
         if (response.status_code in EVALAI_ERROR_CODES):
