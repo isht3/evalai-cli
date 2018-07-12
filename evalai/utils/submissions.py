@@ -3,11 +3,14 @@ import sys
 
 from beautifultable import BeautifulTable
 from click import echo, style
+from datetime import datetime
 
 from evalai.utils.auth import get_request_header, get_host_url
 from evalai.utils.config import EVALAI_ERROR_CODES
 from evalai.utils.urls import URLS
-from evalai.utils.common import validate_token, convert_UTC_date_to_local
+from evalai.utils.common import (validate_token,
+                                 validate_date_format,
+                                 convert_UTC_date_to_local)
 
 
 requests.packages.urllib3.disable_warnings()
@@ -37,6 +40,8 @@ def make_submission(challenge_id, phase_id, file, submission_metadata={}):
                                 )
         response.raise_for_status()
     except requests.exceptions.HTTPError as err:
+        if "input_file" in response.json():
+            echo(style(response.json()["input_file"][0], fg="red", bold=True))
         if (response.status_code in EVALAI_ERROR_CODES):
             validate_token(response.json())
             echo(style("Error: {}".format(response.json()["error"]), fg="red", bold=True))
@@ -44,7 +49,8 @@ def make_submission(challenge_id, phase_id, file, submission_metadata={}):
             echo(err)
         sys.exit(1)
     except requests.exceptions.RequestException as err:
-        echo(err)
+        echo(style("\nCould not establish a connection to EvalAI backend."
+                   " Please check the configured Host URL.\n", bold=True, bg="red"))
         sys.exit(1)
     response = response.json()
     echo(style("\nYour file {} with the ID {} is successfully submitted.\n".format(file.name, response["id"]),
@@ -53,7 +59,7 @@ def make_submission(challenge_id, phase_id, file, submission_metadata={}):
                bold=True))
 
 
-def pretty_print_my_submissions_data(submissions):
+def pretty_print_my_submissions_data(submissions, start_date, end_date):
     """
     Funcion to print the submissions for a particular Challenge.
     """
@@ -65,18 +71,30 @@ def pretty_print_my_submissions_data(submissions):
         echo(style("\nSorry, you have not made any submissions to this challenge phase.\n", bold=True))
         sys.exit(1)
 
+    if not start_date:
+        start_date = datetime.min
+
+    if not end_date:
+        end_date = datetime.max
+
     for submission in submissions:
-        date = convert_UTC_date_to_local(submission['submitted_at'])
-        # Check for empty method name
-        method_name = submission["method_name"] if submission["method_name"] else "None"
-        values = list(map(lambda item: submission[item], attributes))
-        values.append(date)
-        values.append(method_name)
-        table.append_row(values)
+        date = validate_date_format(submission['submitted_at'])
+        if (date >= start_date and date <= end_date):
+            # Check for empty method name
+            date = convert_UTC_date_to_local(submission['submitted_at'])
+            method_name = submission["method_name"] if submission["method_name"] else "None"
+            values = list(map(lambda item: submission[item], attributes))
+            values.append(date)
+            values.append(method_name)
+            table.append_row(values)
+    if len(table) == 0:
+        echo(style("\nSorry, no submissions made during this time period.\n", bold=True))
+        sys.exit(1)
     echo(table)
 
 
-def display_my_submission_details(challenge_id, phase_id):
+
+def display_my_submission_details(challenge_id, phase_id, start_date, end_date):
     """
     Function to display the details of a particular submission.
     """
@@ -96,13 +114,14 @@ def display_my_submission_details(challenge_id, phase_id):
             echo(err)
         sys.exit(1)
     except requests.exceptions.RequestException as err:
-        echo(err)
+        echo(style("\nCould not establish a connection to EvalAI backend."
+                   " Please check the configured Host URL.\n", bold=True, bg="red"))
         sys.exit(1)
 
     response = response.json()
 
     submissions = response["results"]
-    pretty_print_my_submissions_data(submissions)
+    pretty_print_my_submissions_data(submissions, start_date, end_date)
 
 
 def pretty_print_submission_details(submission):
@@ -141,7 +160,8 @@ def display_submission_details(submission_id):
             echo(err)
         sys.exit(1)
     except requests.exceptions.RequestException as err:
-        echo(err)
+        echo(style("\nCould not establish a connection to EvalAI backend."
+                   " Please check the configured Host URL.\n", bold=True, bg="red"))
         sys.exit(1)
     response = response.json()
 

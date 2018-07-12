@@ -5,15 +5,16 @@ from setuptools import setup, find_packages
 PROJECT = 'evalai'
 
 
-long_description = \
-    'https://github.com/Cloud-CV/evalai_cli/blob/master/README.md'
+with open('README.md', encoding='utf-8') as f:
+    long_description = f.read()
 
 setup(
     name=PROJECT,
-    version='1.0.5',
+    version='1.0.16',
 
     description='Use EvalAI through the CLI!',
     long_description=long_description,
+    long_description_content_type='text/markdown',
 
     author='Cloud-CV',
     author_email='team@cloudcv.org',

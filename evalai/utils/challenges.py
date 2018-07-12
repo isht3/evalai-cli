@@ -94,7 +94,8 @@ def display_ongoing_challenge_list():
         echo(err)
         sys.exit(1)
     except requests.exceptions.RequestException as err:
-        echo(err)
+        echo(style("\nCould not establish a connection to EvalAI backend."
+                   " Please check the configured Host URL.\n", bold=True, bg="red"))
         sys.exit(1)
 
     response = response.json()
@@ -136,7 +137,8 @@ def get_participant_or_host_teams(url):
         echo(err)
         sys.exit(1)
     except requests.exceptions.RequestException as err:
-        echo(err)
+        echo(style("\nCould not establish a connection to EvalAI backend."
+                   " Please check the configured Host URL.\n", bold=True, bg="red"))
         sys.exit(1)
 
     response = response.json()
@@ -231,16 +233,16 @@ def pretty_print_challenge_details(challenge):
         team = "Organized By: {}\n\n".format(team)
 
         description = challenge["description"]
-        description = "{}\n{}\n\n".format(style("Description", bg="blue", bold=True), clean_data(description))
+        description = "{}\n{}\n\n".format(style("Description", fg="yellow", bold=True), clean_data(description))
 
         submission_guidelines = challenge["submission_guidelines"]
-        submission_guidelines = "{}\n{}\n\n".format(style("Submission Guidelines", bg="blue", bold=True), clean_data(submission_guidelines))
+        submission_guidelines = "{}\n{}\n\n".format(style("Submission Guidelines", fg="yellow", bold=True), clean_data(submission_guidelines))
 
         evaluation_details = challenge["evaluation_details"]
-        evaluation_details = "{}\n{}\n\n".format(style("Evaluation Details", bg="blue", bold=True), clean_data(evaluation_details))
+        evaluation_details = "{}\n{}\n\n".format(style("Evaluation Details", fg="yellow", bold=True), clean_data(evaluation_details))
 
         terms_and_conditions = challenge["terms_and_conditions"]
-        terms_and_conditions = "{}\n{}\n".format(style("Terms and Conditions", bg="blue", bold=True), clean_data(terms_and_conditions))
+        terms_and_conditions = "{}\n{}\n".format(style("Terms and Conditions", fg="yellow", bold=True), clean_data(terms_and_conditions))
 
         challenge_details = "{}{}{}{}{}{}{}{}".format(challenge_title, start_date, end_date, team, description,
                                                         submission_guidelines, evaluation_details, terms_and_conditions)
@@ -267,7 +269,8 @@ def display_challenge_details(challenge):
             echo(err)
         sys.exit(1)
     except requests.exceptions.RequestException as err:
-        echo(err)
+        echo(style("\nCould not establish a connection to EvalAI backend."
+                   " Please check the configured Host URL.\n", bold=True, bg="red"))
         sys.exit(1)
 
     response = response.json()
@@ -309,7 +312,8 @@ def display_challenge_phase_list(challenge_id):
             echo(err)
         sys.exit(1)
     except requests.exceptions.RequestException as err:
-        echo(err)
+        echo(style("\nCould not establish a connection to EvalAI backend."
+                   " Please check the configured Host URL.\n", bold=True, bg="red"))
         sys.exit(1)
 
     response = response.json()
@@ -375,7 +379,8 @@ def display_challenge_phase_detail(challenge_id, phase_id, is_json):
             echo(err)
         sys.exit(1)
     except requests.exceptions.RequestException as err:
-        echo(err)
+        echo(style("\nCould not establish a connection to EvalAI backend."
+                   " Please check the configured Host URL.\n", bold=True, bg="red"))
         sys.exit(1)
 
     response = response.json()
@@ -422,7 +427,8 @@ def display_challenge_phase_split_list(challenge_id):
         else:
             echo(err)
     except requests.exceptions.RequestException as err:
-        echo(err)
+        echo(style("\nCould not establish a connection to EvalAI backend."
+                   " Please check the configured Host URL.\n", bold=True, bg="red"))
         sys.exit(1)
 
     phase_splits = response.json()
@@ -438,6 +444,7 @@ def pretty_print_leaderboard_data(attributes, results):
     """
     leaderboard_table = BeautifulTable(max_width=150)
     attributes = ["Rank", "Participant Team"] + attributes + ["Last Submitted"]
+    attributes = list(map(lambda item: str(item), attributes))
     leaderboard_table.column_headers = attributes
 
     for rank, result in enumerate(results, start=1):
@@ -468,7 +475,8 @@ def display_leaderboard(challenge_id, phase_split_id):
         else:
             echo(err)
     except requests.exceptions.RequestException as err:
-        echo(err)
+        echo(style("\nCould not establish a connection to EvalAI backend."
+                   " Please check the configured Host URL.\n", bold=True, bg="red"))
         sys.exit(1)
 
     response = response.json()
